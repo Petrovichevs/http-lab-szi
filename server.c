@@ -94,7 +94,25 @@ int main() {
         if (fork() == 0) {
             close(server_socket);
             char buffer[BUFFER_SIZE];
-            recv(client_sock, buffer, sizeof(buffer)-1, 0);
+            int bytes = recv(client_sock, buffer, sizeof(buffer)-1, 0);
+    buffer[bytes] = 0;
+    
+    char *label_pos = strstr(buffer, "?label=");
+    int label = (label_pos) ? atoi(label_pos + 7) : -1;
+    
+    if (!is_in_whitelist(client_ip)) {
+        const char *resp = "HTTP/1.1 403 Forbidden\r\n\r\n";
+        send(client_sock, resp, strlen(resp), 0);
+        close(client_sock);
+        exit(0);
+    }
+    
+    if (strstr(buffer, auth_secret) == NULL) {
+        const char *resp = "HTTP/1.1 401 Unauthorized\r\n\r\n";
+        send(client_sock, resp, strlen(resp), 0);
+        close(client_sock);
+        exit(0);
+    }
             const char *resp = "HTTP/1.1 200 OK\r\n\r\nOK\n";
             send(client_sock, resp, strlen(resp), 0);
             close(client_sock);
