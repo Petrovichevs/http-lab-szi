@@ -57,8 +57,19 @@ void daemonize() {
     open("/dev/null", O_RDWR); dup(0); dup(0);
 }
 
+volatile sig_atomic_t keep_running = 1;
+
+void handle_signal(int sig) {
+    keep_running = 0;
+    if (server_socket != -1) close(server_socket);
+    exit(0);
+}
+
 int main() {
     read_config();
+    signal(SIGTERM, handle_signal);
+    signal(SIGINT, handle_signal);
+
     daemonize();
     
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
